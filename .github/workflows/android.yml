@@ -24,15 +24,24 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Grant Permission
-        run: chmod +x gradlew
+      - name: Find and Fix Gradlew
+        # This part automatically finds the gradlew file even if it's in a sub-folder
+        run: |
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "Error: No gradlew found. Are you sure this is an Android project?"
+            exit 1
+          fi
+          chmod +x "$GRADLEW_PATH"
+          echo "GRADLEW_EXEC=$GRADLEW_PATH" >> $GITHUB_ENV
 
       - name: Build Netscape APK
-        # We skip everything that causes hangs/errors
-        run: ./gradlew assembleDebug -x lint -x test --no-daemon --stacktrace
+        # We use the path we just found to run the build safely
+        run: |
+          ${{ env.GRADLEW_EXEC }} assembleDebug -x lint -x test --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: netscape-hub-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: "**/build/outputs/apk/debug/*.apk"
