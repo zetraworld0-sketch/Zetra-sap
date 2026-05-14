@@ -14,29 +14,28 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Setup Java 11
+        # Downgrading to Java 11 fixes the "ReflectionCache" error
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
           cache: 'gradle'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Find and Fix Gradlew
-        # This part automatically finds the gradlew file even if it's in a sub-folder
         run: |
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
           if [ -z "$GRADLEW_PATH" ]; then
-            echo "Error: No gradlew found. Are you sure this is an Android project?"
+            echo "Error: No gradlew found."
             exit 1
           fi
           chmod +x "$GRADLEW_PATH"
           echo "GRADLEW_EXEC=$GRADLEW_PATH" >> $GITHUB_ENV
 
       - name: Build Netscape APK
-        # We use the path we just found to run the build safely
         run: |
           ${{ env.GRADLEW_EXEC }} assembleDebug -x lint -x test --no-daemon --stacktrace
 
